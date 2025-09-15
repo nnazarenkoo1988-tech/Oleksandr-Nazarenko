@@ -1,0 +1,38 @@
+name: CabinWeb Monitor
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"    # кожні 2 години (UTC)
+  workflow_dispatch: {}       # можна запускати вручну
+
+permissions:
+  contents: write             # дозволяємо зберігати state.json у репо
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright + deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install playwright requests
+          python -m playwright install --with-deps
+
+      - name: Run monitor
+        env:
+          TARGET_URL: ${{ secrets.TARGET_URL }}
+          CABINWEB_USER: ${{ secrets.CABINWEB_USER }}
+          CABINWEB_PASS: ${{ secrets.CABINWEB_PASS }}
+          CABINWEB_SSO:  ${{ secrets.CABINWEB_SSO }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python monitor_cabinweb_playwright.py
